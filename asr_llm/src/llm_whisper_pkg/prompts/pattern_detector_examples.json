@@ -1,0 +1,58 @@
+[
+    {
+        "role": "user",
+        "content": "Pick the dice from the DLR cabinet and place it on the KIT cabinet."
+    },
+    {
+        "role": "assistant",
+        "content": "{\n    \"chain_of_thought\": \"Absolutely! 100% tee-ah-go approved! First, I'll roll on over to the DLR kitchen, find the cabinet, grab the dice, then zoom over to the KIT kitchen, locate the cabinet there, and plop the dice in place. Task complete!\",\n    \"pattern_type\": \"A\",\n    \"object\": \"dice\",\n    \"initial_kitchen\": \"DLR\",\n    \"initial_location\": \"cabinet\",\n    \"target_kitchen\": \"KIT\",\n    \"target_location\": \"cabinet\"\n}"
+    },
+    {
+        "role": "user",
+        "content": "Pick the rubiks_cube from the INRIA cabinet and give it to person in the KIT Kitchen."
+    },
+    {
+        "role": "assistant",
+        "content": "{\n    \"chain_of_thought\": \"Gotcha! Starting from the INRIA kitchen, locate the cabinet to snatch the rubiks_cube, then open the door to zip over to the KIT kitchen, find the person, and hand off the cube with a friendly beep. Mission accomplished!\",\n    \"pattern_type\": \"B\",\n    \"object\": \"rubiks_cube\",\n    \"initial_kitchen\": \"INRIA\",\n    \"initial_location\": \"cabinet\",\n    \"target_kitchen\": \"KIT\",\n    \"target_location\": \"person\"\n}"
+    },
+    {
+        "role": "user",
+        "content": "Pick the mug from the Inria dishwasher and place it on the DLR table."
+    },
+    {
+        "role": "assistant",
+        "content": "{\n    \"chain_of_thought\": \"Beep boop! Starting from the Inria kitchen, locate the dishwasher, grab the mug, then open the door to whirr over to the DLR kitchen, find the table, and set the mug down. Task complete!\",\n    \"pattern_type\": \"A\",\n    \"object\": \"mug\",\n    \"initial_kitchen\": \"Inria\",\n    \"initial_location\": \"dishwasher\",\n    \"target_kitchen\": \"DLR\",\n    \"target_location\": \"table\"\n}"
+    },
+    {
+        "role": "user",
+        "content": "Pick the book from the KIT table and give it to the person in the DLR kitchen."
+    },
+    {
+        "role": "assistant",
+        "content": "{\n    \"chain_of_thought\": \"Gotcha! Heading to the KIT kitchen, I’ll find the table, grab the book, and make my way to the DLR kitchen, ready to hand it over to the person with a cheerful beep. Task accomplished!\",\n    \"pattern_type\": \"B\",\n    \"object\": \"book\",\n    \"initial_kitchen\": \"KIT\",\n    \"initial_location\": \"table\",\n    \"target_kitchen\": \"DLR\",\n    \"target_location\": \"person\"\n}"
+    },
+    {
+        "role": "user",
+        "content": "Pick the spoon from the KIT cabinet and place it on the Inria dishwasher."
+    },
+    {
+        "role": "assistant",
+        "content": "{\n    \"chain_of_thought\": \"Roger that, captain! I’ll zoom to the KIT kitchen, open the cabinet to retrieve the spoon, then open the door to head over to the Inria kitchen and set the spoon in the dishwasher. Mission complete!\",\n    \"pattern_type\": \"A\",\n    \"object\": \"spoon\",\n    \"initial_kitchen\": \"KIT\",\n    \"initial_location\": \"cabinet\",\n    \"target_kitchen\": \"Inria\",\n    \"target_location\": \"dishwasher\"\n}"
+    },
+    {
+        "role": "user",
+        "content": "Pick the cup from the DLR table and give it to the person in the KIT kitchen."
+    },
+    {
+        "role": "assistant",
+        "content": "{\n    \"chain_of_thought\": \"Did someone say tacos? Just kidding! I'll roll to the DLR kitchen, grab the cup from the table, then scoot over to the KIT kitchen to deliver it to the person. Task all wrapped up!\",\n    \"pattern_type\": \"B\",\n    \"object\": \"cup\",\n    \"initial_kitchen\": \"DLR\",\n    \"initial_location\": \"table\",\n    \"target_kitchen\": \"KIT\",\n    \"target_location\": \"person\"\n}"
+    },
+    {
+        "role": "user",
+        "content": "Pick the towel from the Inria cabinet and place it on the KIT table."
+    },
+    {
+        "role": "assistant",
+        "content": "{\n    \"chain_of_thought\": \"Beep boop! Heading over to Inria, I'll open the cabinet, grab the towel, then open the door to zip over to the KIT kitchen and set the towel down on the table. Mission successful!\",\n    \"pattern_type\": \"A\",\n    \"object\": \"towel\",\n    \"initial_kitchen\": \"Inria\",\n    \"initial_location\": \"cabinet\",\n    \"target_kitchen\": \"KIT\",\n    \"target_location\": \"table\"\n}"
+    }
+]

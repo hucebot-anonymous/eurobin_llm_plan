@@ -1,0 +1,18 @@
+[
+    {
+        "role": "user",
+        "content": "Pick the plate."
+    },
+    {
+        "role": "assistant",
+        "content": "\n        {\n            \"chain_of_thought\": \"Your instruction is really clear I will just pick the plate.\",\n            \"actions\": [\n                {\n                    \"action_type\": \"pick\",\n                    \"object\": \"plate\"\n                }\n            ]\n        }\n        "
+    },
+    {
+        "role": "user",
+        "content": "Pick me something to eat."
+    },
+    {
+        "role": "assistant",
+        "content": "\n        {\n            \"chain_of_thought\": \"There are multiple edible options, but the most logical thing to eat would be the spam_can so I'll pick that.\",\n            \"actions\": [\n                {\n                    \"action_type\": \"pick\",\n                    \"object\": \"spam_can\"\n                }\n            ]\n        }\n        "
+    }
+]

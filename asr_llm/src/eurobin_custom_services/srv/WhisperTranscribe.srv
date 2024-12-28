@@ -1,0 +1,3 @@
+---
+string instruction
+string case_type  # Can be "case_a" or "case_b"

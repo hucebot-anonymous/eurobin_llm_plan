@@ -1,0 +1,13 @@
+root ::= root
+Objects ::= "\"sugar\"" | "\"spam\"" | "\"mustard\"" | "\"tomato_soup\"" | "\"bleach_cleanser\"" | "\"plate\"" | "\"bowl\"" | "\"mug\""
+PatternType ::= "\"A\"" | "\"B\""
+Kitchen ::= "\"INRIA\"" | "\"DLR\"" | "\"KIT\""
+Location ::= "\"dishwasher\"" | "\"table\"" | "\"person\"" | "\"cabinet\"" | "\"drawer\""
+root ::= "{"   ws   "\"chain_of_thought\":"   ws   string   ","   ws   "\"pattern_type\":"   ws   PatternType   ","   ws   "\"object\":"   ws   Objects   ","   ws   "\"initial_kitchen\":"   ws   Kitchen   ","   ws   "\"initial_location\":"   ws   Location  "}"
+rootlist ::= "[]" | "["   ws   root   (","   ws   root)*   "]"
+string ::= "\""   ([^"]*)   "\""
+boolean ::= "true" | "false"
+ws ::= [ \t\n]*
+number ::= [0-9]+   "."?   [0-9]*
+stringlist ::= "["   ws   "]" | "["   ws   string   (","   ws   string)*   ws   "]"
+numberlist ::= "["   ws   "]" | "["   ws   string   (","   ws   number)*   ws   "]"
