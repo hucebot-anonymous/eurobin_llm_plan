@@ -1,185 +1,152 @@
 #!/usr/bin/env python3
 import time
 import queue
-import threading
 import rospy
 import sounddevice as sd
 import numpy as np
 import scipy.io.wavfile as wavfile
 import json
-import re
+from enum import Enum
 
 from faster_whisper import WhisperModel
 from std_msgs.msg import String, Bool
 from std_srvs.srv import Trigger, TriggerResponse
-from enum import Enum
+from llama_cpp import Llama, LlamaGrammar
 
-from llama_cpp import Llama
-from llama_cpp import LlamaGrammar
-
-LOG_LEVEL = Enum("LOG_LEVEL", ["DEBUG", "INFO", "WARN", "ERROR", "FATAL"])
-
-
+# Constants
 MICROPHONE_SR = 48000
 TARGET_SR = 16000
 NODE_NAME = "whisper_llm"
+LOG_LEVEL = Enum("LOG_LEVEL", ["DEBUG", "INFO", "WARN", "ERROR", "FATAL"])
 
 
 class WhisperLLMService:
     def __init__(self):
-        rospy.init_node("whisper_llm_service", anonymous=True)
+        rospy.init_node(NODE_NAME, anonymous=True)
+        rospy.loginfo("Whisper service is starting!")
 
-        rospy.loginfo("Whisper service is starting !")
-
-        self.service = rospy.Service(
-            "whisper_llm", Trigger, self.handle_asr_request)
-        self.comp_q = queue.Queue()
-        self.sentence_buffer = ""
-        self.void_count = 0
-        self.button_state = False
-        self.model_path = "./models"
-        self.model = "large-v3"
-        self.device = "cuda"
-
-        self.whisper = WhisperModel(
-            self.model,
-            device=self.device,
-            compute_type="float",
-            download_root=self.model_path,
-        )
-
-        self.llm = Llama(
-            model_path="models/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf",
-            n_gpu_layers=-1,
-            seed=0,
-            n_ctx=2048*2,
-            verbose=False
-        )
-
-        # self.MIC_DEVICE = "Wireless GO II RX"
-        self.SAMPLE_RATE = 48000
-
-        self.system_prompt="You will transcribe sentences about instructions. \
-        The instructions are either of the form pick object at location in kitchen and place at location in kitchen.\
-        or pick object at location in kitchen and gice at person in kitchen. \
-        The available kitchens are DLR, KIT and INRIA.\
-        The available locations are cabinet, table, drawer."
-
-        # listener to the '/streamdeck/speaker' --> Bool
+        # ROS service and publishers
+        self.service = rospy.Service("whisper_llm", Trigger, self.handle_asr_request)
         rospy.Subscriber("/streamdeck/microphone", Bool, self.speaker_callback)
         self.llm_is_thinking = rospy.Publisher("/llm_is_thinking", Bool, queue_size=1)
         self.stt_pub = rospy.Publisher("/speech_to_text", String, queue_size=1)
 
-        # self.stream.start()
+        # Variables
+        self.comp_q = queue.Queue()
+        self.sentence_buffer = ""
+        self.void_count = 0
+        self.button_state = False
+        self.recording = []
 
-        rospy.loginfo("Models loaded successfuly!")
+        # Paths and model configuration
+        self.model_path = "./models"
+        self.device = "cuda"
+        self.whisper = WhisperModel(
+            "large-v3", device=self.device, compute_type="float", download_root=self.model_path
+        )
+        self.llm = Llama(
+            model_path="models/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf",
+            n_gpu_layers=-1,
+            seed=0,
+            n_ctx=4096,
+            verbose=False,
+        )
+
+        # System prompt
+        self.system_prompt = (
+            "You will transcribe sentences about instructions. "
+            "The instructions are either of the form 'pick object at location in kitchen and place at location in kitchen', "
+            "or 'pick object at location in kitchen and give at person in kitchen'. "
+            "The available kitchens are DLR, KIT, and INRIA. "
+            "The available locations are cabinet, table, and drawer."
+        )
+
+        rospy.loginfo("Models loaded successfully!")
 
     def speaker_callback(self, msg):
-        # if the topic is True set the self.button_state to True
-        print(msg.data)
-        if msg.data:
-            self.button_state = True
-        else:
-            self.button_state = False
+        """Callback to handle microphone button state."""
+        self.button_state = msg.data
+        rospy.loginfo(f"Microphone state updated: {self.button_state}")
 
     def asr_callback(self, indata, frames, time, status):
+        """Callback for audio input stream."""
         self.recording.append(indata.copy())
 
     def handle_asr_request(self, req):
-        self.recording = []
-        # Wait for the button to be pressed
+        """Handles ASR requests via the ROS service."""
+        rospy.loginfo("Waiting for microphone activation...")
         while not self.button_state:
-            rospy.loginfo("Waiting for the button to be pressed")
             time.sleep(0.1)
 
-        # Button is pressed, start the recording stream
+        rospy.loginfo("Recording started.")
         with sd.InputStream(
             device="Wireless GO II RX",
             dtype=np.float32,
             channels=1,
-            samplerate=self.SAMPLE_RATE,
-            blocksize=int(0.001 * self.SAMPLE_RATE),  # corrected reference to MICROPHONE_SR
+            samplerate=MICROPHONE_SR,
+            blocksize=int(0.001 * MICROPHONE_SR),
             callback=self.asr_callback,
         ):
             while self.button_state:
                 time.sleep(0.1)
 
-        # Concatenate recorded segments
+        # Concatenate recorded audio and save it to a WAV file
         recording = np.concatenate(self.recording, axis=0)
+        wavfile.write("recording.wav", MICROPHONE_SR, recording)
+        rospy.loginfo("Recording saved to 'recording.wav'.")
 
-        # TO-DO: Find a way to avoid this unnecesary writing operation
-        # Save recording to a WAV file
-        wavfile.write("recording.wav", self.SAMPLE_RATE, recording)
-        rospy.loginfo("Recording saved to recording.wav")
-
-        # publish to the /llm_is_thinking topic
+        # Notify that LLM is processing
         self.llm_is_thinking.publish(True)
-        # Per`form tran`scription using the ASR model
-        segments, info = self.whisper.transcribe(
-            "recording.wav",
-            beam_size=5,
-            language="en",
-            initial_prompt=self.system_prompt
+
+        # Transcribe using Whisper
+        segments, _ = self.whisper.transcribe(
+            "recording.wav", beam_size=5, language="en", initial_prompt=self.system_prompt
         )
+        user_prompt = " ".join(segment.text for segment in segments)
+        rospy.loginfo(f"Transcribed text: {user_prompt}")
 
-        # Log each transcribed segment
-        user_prompt = ''
-        for segment in segments:
-            rospy.loginfo(f"[{segment.start:.2f}s -> {segment.end:.2f}s] {segment.text}")
-            user_prompt += segment.text + " "
-        # Concatenate all segment texts into a single sentence
-        # user_prompt = ''.join(segment.text for segment in segments)
-
-        rospy.loginfo("Generating response for the prompt: %s", user_prompt)
-        grammar = LlamaGrammar.from_file("/catkin_ws/src/llm_whisper_pkg/grammar/pattern_detector.gbnf")
-
-
+        # Generate response using LLM
+        grammar_path = "/catkin_ws/src/llm_whisper_pkg/grammar/pattern_detector.gbnf"
+        grammar = LlamaGrammar.from_file(grammar_path)
         self.generate_prompt(user_prompt)
+        response = self.llm.create_chat_completion(
+            messages=self.full_prompt, grammar=grammar, temperature=0
+        )["choices"][0]["message"]["content"]
 
-        response = self.llm.create_chat_completion(messages = self.full_prompt, grammar=grammar, temperature=0)['choices'][0]['message']['content']
-
-        rospy.loginfo(response)
+        rospy.loginfo(f"Generated response: {response}")
         response_json = json.loads(response)
 
-        # publish llm_is_thinking to False
-
-        # get the chain_of_thought field and publish it to the /speech_to_text topic
-        chain_of_thought = response_json['chain_of_thought']
-        # pub = rospy.Publisher("/speech_to_text", String, queue_size=1)
+        # Publish response to the speech-to-text topic
+        chain_of_thought = response_json.get("chain_of_thought", "")
         self.stt_pub.publish(chain_of_thought)
-        # rospy.loginfo("LLM Generated plan:\n", response_json)
+        rospy.loginfo(f"Published chain of thought: {chain_of_thought}")
 
-        # response to ascii
-        # response = response.encode('ascii')
-        # Return the final transcribed sentence
+        # Stop LLM thinking indicator
+        self.llm_is_thinking.publish(False)
 
+        # Return response to the service
         resp = TriggerResponse()
         resp.success = True
         resp.message = response
-
         return resp
 
     def generate_prompt(self, user_prompt):
-        with open("/catkin_ws/src/llm_whisper_pkg/prompts/system_prompt.txt", "r") as file:
-            system_prompt = file.read()
+        """Generates a prompt for the LLM from system and example prompts."""
+        system_prompt_path = "/catkin_ws/src/llm_whisper_pkg/prompts/system_prompt.txt"
+        examples_path = "/catkin_ws/src/llm_whisper_pkg/prompts/examples.json"
 
-        # load json
-        with open("/catkin_ws/src/llm_whisper_pkg/prompts/pattern_detector_examples.json", "r") as file:
+        with open(system_prompt_path, "r") as file:
+            system_prompt = file.read()
+        with open(examples_path, "r") as file:
             examples = json.load(file)
 
-        print(examples)
-
-        messages = [{"role": "system", "content": system_prompt}] + examples
-
-        self.full_prompt = messages + [{"role": "user", "content": user_prompt}]
-
-
-
+        self.full_prompt = [{"role": "system", "content": system_prompt}] + examples
+        self.full_prompt.append({"role": "user", "content": user_prompt})
 
 
 if __name__ == "__main__":
     try:
-        ws = WhisperLLMService()
-        rospy.spin()  # Keep the service alive
+        service = WhisperLLMService()
+        rospy.spin()
     except rospy.ROSInterruptException:
-        pass
+        rospy.logerr("ROS node interrupted.")
