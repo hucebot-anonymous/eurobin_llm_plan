@@ -1,83 +1,72 @@
 FROM nvidia/cuda:12.4.1-runtime-ubuntu20.04
 
+# Arguments and environment variables
 ARG DEBIAN_FRONTEND=noninteractive
 ARG CUDNN_ARCH="linux-x86_64"
+ENV TZ="Europe/Paris"
+ENV SHELL=/bin/bash
+ENV TERM=xterm
+ENV PATH="/opt/ros/noetic/bin:${PATH}"
 
-ENV TZ "Europe/Paris"
-
-# Set the default shell to bash instead of sh
+# Set the default shell to bash
 SHELL ["/bin/bash", "-c"]
 
-ENV SHELL /bin/bash
-ENV TERM xterm
-
+# Working directory for initial setup
 WORKDIR /libs
 
-
-# install basic dependencies
+# Install basic dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     wget \
-    software-properties-common
+    software-properties-common && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# cuda toolkit
+# Install CUDA toolkit
 RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/cuda-keyring_1.1-1_all.deb && \
-    apt-get update && \
-    apt-get install -y cuda-toolkit-12-4
+    dpkg -i cuda-keyring_1.1-1_all.deb && \
+    apt-get update && apt-get install -y cuda-toolkit-12-4 && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-
-# install cudnn8 from tarball
+# Install cuDNN from tarball
 RUN wget https://developer.download.nvidia.com/compute/cudnn/redist/cudnn/${CUDNN_ARCH}/cudnn-${CUDNN_ARCH}-8.9.5.30_cuda12-archive.tar.xz && \
     tar -xvf cudnn-${CUDNN_ARCH}-8.9.5.30_cuda12-archive.tar.xz && \
-    mv cudnn-${CUDNN_ARCH}-8.9.5.30_cuda12-archive/include/* /usr/local/cuda/include/ && \
-    mv cudnn-${CUDNN_ARCH}-8.9.5.30_cuda12-archive/lib/* /usr/local/cuda/lib64/
+    cp cudnn-${CUDNN_ARCH}-8.9.5.30_cuda12-archive/include/* /usr/local/cuda/include/ && \
+    cp cudnn-${CUDNN_ARCH}-8.9.5.30_cuda12-archive/lib/* /usr/local/cuda/lib64/ && \
+    rm -rf cudnn-${CUDNN_ARCH}-8.9.5.30_cuda12-archive*
 
+# Install Python 3.11 and pip dependencies
+RUN add-apt-repository ppa:deadsnakes/ppa && apt-get update && \
+    apt-get install -y python3.11 python3.11-distutils python-is-python3 python3-pip python3.11-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN add-apt-repository ppa:deadsnakes/ppa && apt-get update
-RUN apt-get install -y python3.11 python3.11-distutils python-is-python3 python3-pip python3.11-dev
+# Install Python packages
+RUN pip install --no-cache-dir \
+    faster-whisper \
+    sounddevice \
+    pydub \
+    matplotlib \
+    scipy
 
-RUN pip install faster-whisper
+# Install PortAudio
+RUN apt-get update && apt-get install -y --no-install-recommends portaudio19-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN pip install sounddevice pydub
+# Install llama-cpp-python with CMake arguments
+RUN CMAKE_ARGS="-DGGML_CUDA=on" pip install --no-cache-dir llama-cpp-python
 
-RUN pip install matplotlib
-
-RUN apt-get install -y portaudio19-dev
-
-RUN pip install scipy
-
-WORKDIR /catkin_ws
-
-# Install python dependencies
-RUN CMAKE_ARGS="-DGGML_CUDA=on" pip install llama-cpp-python
-
-
-
+# ROS1 installation setup
 WORKDIR /temp
-
-# Install ROS1
 COPY .ci/install_ros1.sh /temp/install_ros1.sh
 RUN chmod +x /temp/install_ros1.sh && \
     /temp/install_ros1.sh && \
-    cd .. && \
-    rm -rf /temp
+    cd .. && rm -rf /temp
 
-
+# ROS workspace setup
 WORKDIR /catkin_ws
 
-ENV PATH="/opt/ros/noetic/bin:${PATH}"
+# Configure ROS environment
+RUN echo 'export ROS_MASTER_URI=' >> ~/.bashrc && \
+    echo 'export ROS_IP=' >> ~/.bashrc && \
+    echo 'export ROS_HOSTNAME=$ROS_IP' >> ~/.bashrc
 
-
-
-# add tiago as ROS_MASTER_URI
-# add my own ip as ros
-RUN echo "export ROS_MASTER_URI=http://192.168.50.162:11311" >> ~/.bashrc
-RUN echo "export ROS_IP=192.168.50.221" >> ~/.bashrc
-RUN echo "export ROS_HOSTNAME=192.168.50.221" >> ~/.bashrc
-
-# COPY src/ /catkin_ws/src/
-# Build the workspace
-# RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && catkin_make"
-
-# ENTRYPOINT ["/bin/bash", "-c", "source /opt/ros/noetic/setup.bash && source devel/setup.bash && exec bash"]
-
-ENTRYPOINT [ "/bin/bash" ]
+# Default to bash
+ENTRYPOINT ["/bin/bash"]
