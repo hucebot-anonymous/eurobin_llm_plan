@@ -1,3 +1,0 @@
-[submodule "src/eurobin_custom_services"]
-	path = src/eurobin_custom_services
-	url = git@gitlab.inria.fr:eurobin-horizon/code/eurobin_custom_services.git
