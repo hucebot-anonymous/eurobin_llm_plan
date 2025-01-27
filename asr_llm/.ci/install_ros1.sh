@@ -6,6 +6,4 @@ apt update
 apt install ros-noetic-ros-base -y
 echo "source /opt/ros/noetic/setup.bash" >>~/.bashrc
 apt install python3-rosdep python3-rosinstall python3-rosinstall-generator python3-wstool build-essential -y
-
-echo "export ROS_HOSTNAME=localhost" >>~/.bashrc
 echo "export ROS_MASTER_URI=http://localhost:11311" >>~/.bashrc

@@ -65,8 +65,7 @@ WORKDIR /catkin_ws
 
 # Configure ROS environment
 RUN echo 'export ROS_MASTER_URI=' >> ~/.bashrc && \
-    echo 'export ROS_IP=' >> ~/.bashrc && \
-    echo 'export ROS_HOSTNAME=$ROS_IP' >> ~/.bashrc
+    echo 'export ROS_IP=' >> ~/.bashrc 
 
 # Default to bash
 ENTRYPOINT ["/bin/bash"]

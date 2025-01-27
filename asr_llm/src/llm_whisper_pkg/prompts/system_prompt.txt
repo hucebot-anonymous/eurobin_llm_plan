@@ -20,4 +20,4 @@ If we are on Pattern B the target location will always be the person.
 
 Inria kitchen is isolated with a door, so first you need to open it to go from it and to it in other kitchens.
 
-Also you always are located in the first kitchen
+Also you always are located in the first kitchen.

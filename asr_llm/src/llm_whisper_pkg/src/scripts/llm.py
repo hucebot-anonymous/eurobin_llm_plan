@@ -53,7 +53,7 @@ class WhisperLLMService:
         )
 
         # System prompt
-        self.system_prompt = (
+        self.whisper_system_prompt = (
             "You will transcribe sentences about instructions. "
             "The instructions are either of the form 'pick object at location in kitchen and place at location in kitchen', "
             "or 'pick object at location in kitchen and give at person in kitchen'. "
@@ -100,7 +100,7 @@ class WhisperLLMService:
 
         # Transcribe using Whisper
         segments, _ = self.whisper.transcribe(
-            "recording.wav", beam_size=5, language="en", initial_prompt=self.system_prompt
+            "recording.wav", beam_size=5, language="en", initial_prompt=self.whisper_system_prompt
         )
         user_prompt = " ".join(segment.text for segment in segments)
         rospy.loginfo(f"Transcribed text: {user_prompt}")
