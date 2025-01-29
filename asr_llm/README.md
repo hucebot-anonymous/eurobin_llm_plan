@@ -25,7 +25,8 @@ The **Whisper LLM Service** is a ROS-based application that integrates speech-to
     - `src/scripts/`: Main Python script (`llm.py`) for processing requests.
 
 
-## Usage
+
+## Service - (whisper + LLM)
 
 ### Modify the Dockerfile
 Before building the Docker image, you need to update the following lines in the `Dockerfile` to configure the ROS environment:
@@ -90,6 +91,23 @@ Once audio is transcribed by Whisper and processed by the LLM:
 
 During this process, the following topics are updated to reflect the system's state for onboard display purposes:  
 - `llm_is_thinking`
+
+
+
+## Node - Simple LLM Demo
+
+If you want to test the LLM without using the Whisper ASR, follow these steps:
+
+1. Run the LLM demo:
+
+`rosrun llm_whisper_pkg simple_llm_demo.py`
+
+2. In another terminal, publish a user prompt:
+
+`rostopic pub /user_prompt std_msgs/String "data: 'Pick up the mug from the INRIA kitchen and place it inside the DLR cabinet.'"`
+
+
+This will trigger the LLM to generate a response based on the prompt, and publish the response to the `/plan` topic.
 
 
 
